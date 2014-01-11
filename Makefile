@@ -1,10 +1,14 @@
-all:chat
+all:chat sender
 
-chat:	server.o
-	gcc server.o -o chat -pthread
+chat:	receiver.o
+	gcc receiver.o -o chat -pthread
+sender: sender.o
+	gcc sender.o -o sender
 
-server.o:	server.c
-	gcc -c server.c
+receiver.o:	receiver.c
+	gcc -c receiver.c
+sender.o: sender.c
+	gcc -c sender.c
 
 clean:
 	rm -f server.o chat
