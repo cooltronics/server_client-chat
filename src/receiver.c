@@ -1,7 +1,6 @@
 //This program contains some operations in blocking mode.
 //read in reader and scanf in writer fuction is in blocking mode is not coming out on the command so can't quit program using SIGQUIT signal.
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <netinet/in.h>
@@ -60,39 +59,46 @@ void get_home_page (int socket_fd)
 }
 static void handler (int sig, siginfo_t *siginfo, void *context)
 {
+	printf("> In signal handler%d.\n",siginfo->si_code);
+	printf("> In signal handler%d.\n",siginfo->si_value);
 	int stat = 0;
-	if(sig & SIGQUIT)
+	status = 0;
+	if(sig == SIGQUIT)
 	{
 		printf("\b\bSIGQUIT is called.\n");
 			
 //		close(socket_fd);
 	}
-	else if(sig & SIGINT)
+	else if(sig == SIGINT)
 	{
 		printf("\b\bSIGINT is called.\n");
 	}
-	else if(sig & SIGCHLD)
+	else if(sig == SIGCHLD)
 	{
-	do {
-		pid_t pid;
-		pid = waitpid(-1, &stat, WNOHANG);
-		if (pid == -1) {
-			perror("waitpid");
-			exit(EXIT_FAILURE);
-		}
-		printf("> waitpid : %d\n",pid);
-		if (WIFEXITED(stat)) {
-			printf("exited, status=%d\n", WEXITSTATUS(stat));
-		} else if (WIFSIGNALED(stat)) {
-			printf("killed by signal %d\n", WTERMSIG(stat));
-		} else if (WIFSTOPPED(stat)) {
-			printf("stopped by signal %d\n", WSTOPSIG(stat));
-		} else if (WIFCONTINUED(stat)) {
-			printf("continued\n");
-		}
-    } while (!WIFEXITED(stat) && !WIFSIGNALED(stat));
+		printf("\b\bSIGCHLD is called.\n");
+		do {
+			pid_t pid;
+			pid = waitpid(-1, &stat, WNOHANG);
+			if (pid == -1) {
+				perror("waitpid");
+				exit(EXIT_FAILURE);
+			}
+			printf("> waitpid : %d\n",pid);
+			if (WIFEXITED(stat)) {
+				printf("exited, status=%d\n", WEXITSTATUS(stat));
+	//			stat = stat >> 8; 
+	//			stat &= 0x000000ff;
+				printf("status=%d\n", stat);
+			} else if (WIFSIGNALED(stat)) {
+				printf("killed by signal %d\n", WTERMSIG(stat));
+			} else if (WIFSTOPPED(stat)) {
+				printf("stopped by signal %d\n", WSTOPSIG(stat));
+			} else if (WIFCONTINUED(stat)) {
+				printf("continued\n");
+			}
+		} while (!WIFEXITED(stat) && !WIFSIGNALED(stat));
+		status = 1;
 	}
-	status = 0;
 }
 
 
@@ -137,8 +143,8 @@ read returns zero, the client closed the connection. */
 					free (text);
 					break;
 				case MESSAGE_REQ:	//if server tell about any client chat request
-	                 if (read (client_socket, &length, sizeof(length)) == 0)     //if read 0 bytes
-                         return 0;
+		                 if (read (client_socket, &length, sizeof(length)) == 0)     //if read 0 bytes
+				return 0;
                      text = (char*) malloc (length);
                      if(status)
                      {
@@ -170,6 +176,23 @@ int send_text(int socket_fd,const char *text,int header)
 	write (1, text, length);
 	return 1;
 }
+
+int get_msg(char *pmsg)
+{
+	int ret;
+    do{
+    	ret = read(STDIN_FILENO,pmsg,1);
+        if(ret != -1)
+        {
+            if(*pmsg == '\n')
+                break;
+            pmsg++;
+        }
+    }while( status );
+	*pmsg = '\0';
+	printf("out of writer : %d\n",ret);
+	return 0;
+}
  
 void * writer (void *arg)
 {
@@ -183,7 +206,7 @@ void * writer (void *arg)
 	ret = connect (data->socket_fd,(struct sockaddr *) &data->client_name, sizeof(data->client_name));
 
     do{
-		pmsg = message;
+	    pmsg = message;
 	    printf("Socket id : %d : msg : %s \n",data->socket_fd,message);
 	    //sleep(1);
 	    ret = send_text(data->socket_fd, message,CHAT_MESSAGE);
@@ -191,21 +214,13 @@ void * writer (void *arg)
 	    {
 	    	perror("Write failed.\n");
 		    break;
-		}
-        do{
-        	ret = read(STDIN_FILENO,pmsg,1);
-            if(ret != -1)
-            {
-                if(*pmsg == '\n')
-                    break;
-                pmsg++;
-            }
-        }while( status );
-		*pmsg = '\0';
-		printf("out of writer : %d\n",ret);
-	}while(status);
-	return (void *)1;
+	    }
+		get_msg(pmsg);
+    }while(status);
+//	return (void *)1;
+	pthread_exit((void *)1);
 }
+
 
 int main (int argc, char* const argv[])
 {
@@ -226,19 +241,27 @@ int main (int argc, char* const argv[])
 
 	struct sigaction act,old_act;
 	memset(&act,'\0',sizeof(act));
+	//sigfillset();
 	act.sa_sigaction = &handler;
 	act.sa_flags = SA_SIGINFO;
+//	sigpending(act);
+//	printf("act : %d\n",act);
+//	signal(SIGCHLD,SIG_DFL);
 	if(sigaction(SIGQUIT,&act,(void *)&old_act) < 0)
 	{
 		perror("Sigaction quit fail.\n");
 		goto out;
 	}
-//	if(sigaction(SIGCHLD,&act,NULL) < 0)
-//	{
-//		perror("Sigaction int fail.\n");
-//		goto out;
-//	}
-
+//	sigemptyset (&(act.sa_mask));
+//	sigaddset(&(act.sa_mask),SIGCHLD);
+	if(sigaction(SIGCHLD,&act,NULL) < 0)
+	{
+		perror("Sigaction int fail.\n");
+		goto out;
+	}
+//	printf("act : %d\n",act);
+///////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 	socket_fd = socket (PF_INET, SOCK_STREAM, 0);
 	if(socket_fd == -1)
 	{
@@ -313,8 +336,7 @@ int main (int argc, char* const argv[])
 			perror("Listen error.\n");
 		goto out;
 	}
-	printf("Socket ID is: %d",socket_fd);
-	
+	printf("Socket ID is: %d\n",socket_fd);
 
 	do{
 		ret = pthread_mutex_unlock(&mutex);
@@ -326,10 +348,12 @@ int main (int argc, char* const argv[])
 		struct sockaddr client_name;
 		socklen_t client_name_len;
 		int client_socket_fd;
-
+		printf("Ready for Connection.\n");
 //Accept a connection.
 //Accept will block untill a connection is present n queue.
 		client_socket_fd = accept(socket_fd, &client_name, &client_name_len);
+
+
 		data.socket_fd = client_socket_fd;
 //		data.text = buffer;
 //		data.header = CHAT_MESSAGE;
@@ -337,38 +361,78 @@ int main (int argc, char* const argv[])
 
 		if(client_socket_fd == -1)
 		{
-			perror("accept error.\n");
+			if(EINTR == errno)
+			{
+				printf("Continue accept.\n");
+				continue;
+			}
+			else
+			{
+				perror("accept error.\n");
+				if(!status)
+					break;
+			}
 		}
 		printf("client accept address : %d \n",client_name.sa_family);
 		printf("after accept ID is: %d.\n",client_socket_fd);
-		pthread_mutex_lock(&mutex);
-		if(status)
+		////////////////////////////
+		pid1 = fork();
+		if(pid1 < 0)
 		{
-			pthread_mutex_unlock(&mutex);
-//			pid1 = fork();
-//			if(pid1 > 0)
-//			{
-/* Handle the connection. */
-//			printf("In child. pid : %d.\n",pid1);
-			pthread_create(&tid1,NULL,&reader,(void *)&client_socket_fd);
-			pthread_create(&tid2,NULL,&writer,(void *)&data);
-//			client_sent_quit_message = server(client_socket_fd);
-/* Close our end of the connection. */
-//			close (client_socket_fd);
-//			exit(0);
-//			}
+			perror("fork error.\n");
 		}
-		ret = pthread_mutex_unlock(&mutex);
+		else if(pid1 > 0)
+		{
+			//in parent
+			//while(status)
+			{
+				printf("In [%d]parent.\n",getpid());
+				//goto out;
+			}
+		}
+		else
+		{
+			//in child
+			printf("In [%d]child.\n",getpid());
+			//sleep(1);
+			//exit(5);
+		
+		////////////////////////////
+			pthread_mutex_lock(&mutex);
+			if(status)
+			{
+				pthread_mutex_unlock(&mutex);
+	//			pid1 = fork();
+	//			if(pid1 > 0)
+	//			{
+	/* Handle the connection. */
+	//			printf("In child. pid : %d.\n",pid1);
+				pthread_create(&tid1,NULL,&reader,(void *)&client_socket_fd);
+				pthread_create(&tid2,NULL,&writer,(void *)&data);
+				pthread_join(tid1,NULL);
+				pthread_join(tid2,NULL);
+	//			close (client_socket_fd);
+	//			exit(0);
+	//			}
+			}
+			ret = pthread_mutex_unlock(&mutex);
+			if(ret & EPERM)
+			{
+				printf("Mutex not locked.\n");
+			}
+			exit(0);
+		}
+		pthread_mutex_lock(&mutex);
 		if(ret & EPERM)
 		{
 			printf("Mutex not locked.\n");
 		}
-		printf("In parent. pid : %d\n",getpid());
-		pthread_mutex_lock(&mutex);
 	}while (status);
-	pthread_mutex_unlock(&mutex);
-	pthread_join(tid1,NULL);
-	pthread_join(tid2,NULL);
+	ret = pthread_mutex_unlock(&mutex);
+	if(ret & EPERM)
+	{
+		printf("Mutex not locked.\n");
+	}
 /*
 	if (hostinfo == NULL)
 		return 1;
