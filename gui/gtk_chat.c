@@ -5,7 +5,7 @@
 #include "/usr/local/include/gtk-2.0/gtk/gtk.h"
 
 #define CHAT_BUTTON_CLICK_STRING "Button clicked.\n"
-gboolean add_button(GtkWidget *,GtkWidget *,gint x,gint y,gchar *);
+gboolean add_button(GtkWidget **,GtkWidget *,gint x,gint y,gchar *);
 /* This is a callback function. The data arguments are ignored
  * in this example. More on callbacks below. */
 static void hello( GtkWidget *widget,
@@ -57,11 +57,11 @@ static void destroy( GtkWidget *widget,
     gtk_main_quit ();
 }
 
-gboolean add_button(GtkWidget * _windowFixed,GtkWidget *button,gint x,gint y,gchar *buttonName)
+gboolean add_button(GtkWidget **_windowFixed,GtkWidget *button,gint x,gint y,gchar *buttonName)
 {
 	button = gtk_button_new_with_label(buttonName);
 	gtk_widget_set_size_request(button, 100, 25);
-	gtk_fixed_put(GTK_FIXED(_windowFixed), button, x, y);
+	gtk_fixed_put(GTK_FIXED(*_windowFixed), button, x, y);
 	gtk_widget_show(button);
 	return TRUE;
 }
@@ -106,14 +106,12 @@ int create_menu(GtkWidget **window,GtkWidget **vbox)
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item), file_menu);
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item1), file_menu1);
 
-	*vbox = gtk_vbox_new (FALSE, 0);
-    	gtk_container_add (GTK_CONTAINER (*window), *vbox);
-    	gtk_widget_show (*vbox);
 
  /* Create a menu-bar to hold the menus and add it to our main window */
     	menu_bar = gtk_menu_bar_new ();
     	gtk_box_pack_start (GTK_BOX (*vbox), menu_bar, FALSE, FALSE, 2);
     	gtk_widget_show (menu_bar);
+	gtk_widget_show (*vbox);
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item1 );
@@ -153,7 +151,7 @@ int main( int   argc,
 	is GTK_WIN_POS_CENTER_ALWAYS, this will also cause the window to be
 	repositioned to satisfy the new constraint.*/
 	gtk_window_set_position (GTK_WINDOW(window),GTK_WIN_POS_CENTER);
-	gtk_widget_set_size_request (GTK_WIDGET (window), 400, 250);
+	gtk_widget_set_size_request (GTK_WIDGET (window), 400, 400);
     /* When the window is given the "delete-event" signal (this is given
      * by the window manager, usually by the "close" option, or on the
      * titlebar), we ask it to call the delete_event () function
@@ -195,6 +193,10 @@ int main( int   argc,
 
 //	button = gtk_button_new_with_label ("hi");
 //  g_print (gtk_link_button_get_uri(GTK_LINK_BUTTON(button[0])));
+	vbox = gtk_vbox_new (FALSE, 0);
+   	gtk_container_add (GTK_CONTAINER (window), vbox);
+//	gtk_widget_show (vbox);
+
 	ret = create_menu(&window,&vbox);
 	if(ret == -1)
 	{
@@ -205,13 +207,13 @@ int main( int   argc,
 	gtk_container_add(GTK_CONTAINER(vbox), _windowFixed);
 	gtk_widget_show(_windowFixed);
 
-    /* Create a button to which to attach menu as a popup */
+    // Create a button to which to attach menu as a popup 
 	button[0] = gtk_link_button_new_with_label ("https://developer.gnome.org/gtk2/stable/","Chat");
 	gtk_widget_set_size_request(button[0], 100, 25);
 	gtk_fixed_put(GTK_FIXED(_windowFixed), button[0], 10, 15);
 	gtk_widget_show(button[0]);
 
-	ret = add_button(_windowFixed,button[0],10,50,"reset");
+	ret = add_button(&_windowFixed,button[1],10,50,"Send");
 
 
 	// When the button receives the "clicked" signal, it will call the
@@ -225,8 +227,25 @@ int main( int   argc,
     // signal could come from here, or the window manager. 
     g_signal_connect_swapped (button[0], "clicked",
 			      G_CALLBACK (gtk_widget_destroy),
-                             window);
-    
+    					window);
+
+
+	GtkWidget *scrolledWindow;
+    GtkWidget *textView;
+    PangoFontDescription *fontDesc;
+
+	scrolledWindow = gtk_scrolled_window_new(NULL, NULL);
+    textView = gtk_text_view_new();
+    fontDesc = pango_font_description_from_string("Courier Pitch Bold 12");
+    gtk_widget_modify_font(textView, fontDesc);
+    gtk_container_add(GTK_CONTAINER(scrolledWindow), textView);
+
+	gtk_box_pack_start(GTK_BOX(vbox), scrolledWindow, TRUE, TRUE, 5);
+    gtk_container_add(GTK_CONTAINER(window), vbox);
+	gtk_widget_show(scrolledWindow);
+	gtk_widget_show(textView);
+	gtk_widget_show (vbox);
+
     /* This packs the button into the window (a gtk container). */
 //    gtk_container_add (GTK_CONTAINER (window), button[0]);
 //    gtk_container_add (GTK_CONTAINER (window), button[1]);
