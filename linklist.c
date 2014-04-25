@@ -13,9 +13,16 @@
 //linked list can grow and shrink dynamically
 #define EXIT 0
 
+#define	FREE_NODE(_NODE) do{	\
+							free(_NODE->name); \
+							free(_NODE->logid);	\
+							free(_NODE->password);	\
+							free(_NODE);	\
+							}while(0)
+
 typedef struct linklist
 {
-	int logid;
+	char* logid;
 	char *name;
 	char *password;
 	struct linklist *prev;
@@ -58,7 +65,7 @@ void print_list(linklist *head)
 	linklist *curr = head;
 	while(curr != NULL)
 	{
-	printf("\nName : %3s, ID : %3d, passwordd : %3s",curr->name,curr->logid,curr->password);
+	printf("\nName : %3s, ID : %3s, passwordd : %3s",curr->name,curr->logid,curr->password);
 	curr = curr->next;
 	}
 }
@@ -69,21 +76,22 @@ void print_list_rev(linklist *head)
 	if(curr != NULL)
 	{
 	print_list_rev(curr->next);
-	printf("\nName : %3s, ID : %3d, passwordd : %3s",curr->name,curr->logid,curr->password);
+	printf("\nName : %3s, ID : %3s, passwordd : %3s",curr->name,curr->logid,curr->password);
 	}
 }
 
 void scan_list(linklist *newnode)
 {
 	char buffer[128];
-	int length;
 	printf("\nName :\t");
 	scanf ("%s",buffer);
 	newnode->name = (char *) malloc( (strlen(buffer) + 1) * sizeof(char) );
 	strcpy(newnode->name,buffer);
 
 	printf("ID :\t");
-	scanf ("%d",&newnode->logid);
+	scanf ("%s",buffer);
+	newnode->logid = (char *) malloc( (strlen(buffer) + 1) * sizeof(char) );
+	strcpy(newnode->logid,buffer);
 
 	printf("Password :\t");
 	scanf ("%s",buffer);
@@ -103,8 +111,57 @@ linklist *create_node()
 	return new;
 }
 
-void add_node_at_start(linklist **head,linklist * newnode)
+int add_node(linklist** head,linklist** node,int number)		//add node at perticuler no.
 {
+	linklist *temp = *head;
+	if(*head == NULL)
+	{
+		if(number > 1){
+			printf("Not valid node number.\n");
+			return -1;
+		}
+	}
+	while(--number)
+	{
+		if(temp->next != NULL){
+			temp = temp->next;
+		}
+		else{
+			break;
+		}
+	}
+	if(number == 1)
+	{
+		temp->next = *node;
+		(*node)->prev = temp;
+		goto out;
+	}
+	if(number == 0)
+	{
+		if(*temp == NULL){
+			temp = *node;
+		}
+		else{
+			*node->next = temp;
+			*node->prev = temp->prev;
+			if(temp->prev != NULL){
+				temp->prev->next = *node;
+			}
+			temp->prev = *node;
+		}
+	}
+	else{
+		printf("Not valid node number.\n");
+		return -1;
+	}
+	out:
+		return 0;
+}
+
+linklist* add_node_at_start(linklist **head)
+{
+	linklist *newnode = create_node();
+	scan_list(newnode);
 	if(*head == NULL)
 	{
 	*head = newnode;
@@ -117,10 +174,12 @@ void add_node_at_start(linklist **head,linklist * newnode)
 	newnode->next = *head;
 	(*head) = newnode;
 	}
+	return newnode;
 }
-
-void add_node_at_end(linklist **head,linklist *newnode)
+linklist* add_node_at_end(linklist **head)
 {
+	linklist *newnode = create_node();
+	scan_list(newnode);
 	linklist *tail = NULL;
 	if(*head == NULL)
 	{
@@ -140,6 +199,7 @@ void add_node_at_end(linklist **head,linklist *newnode)
 
 	newnode->prev = tail;
 	}
+	return newnode;
 }
 
 linklist* remove_node(linklist ** head,linklist **node)
@@ -313,29 +373,33 @@ while(1)
 		}
 		case 3: //add node at start
 		{
-			newnode = create_node();
+			linklist* newnode = NULL;
+			//newnode = create_node();
+			//printf("Newnode : %p",newnode);
+			//if(newnode == NULL)
+			//{
+			//	fprintf(stderr,"Node not created");
+			//	exit(2);
+			//}
+			//scan_list(newnode);
+			newnode = add_node_at_start(&head);
 			printf("Newnode : %p",newnode);
-			if(newnode == NULL)
-			{
-				fprintf(stderr,"Node not created");
-				exit(2);
-			}
-			scan_list(newnode);
-			add_node_at_start(&head,newnode);
 			break;
 		}
 
 		case 4: //add node at end
 		{
-			newnode = create_node();
+			linklist* newnode = NULL;
+			//newnode = create_node();
 			// printf("Newnode : %u",newnode);
-			if(newnode == NULL)
-			{
-				fprintf(stderr,"Node not created");
-				exit(2);
-			}
-			scan_list(newnode);
-			add_node_at_end(&head,newnode);
+			//if(newnode == NULL)
+			//{
+			//	fprintf(stderr,"Node not created");
+			//	exit(2);
+			//}
+			//scan_list(newnode);
+			add_node_at_end(&head);
+			printf("Newnode : %p",newnode);
 			break;
 		}
 
@@ -426,7 +490,7 @@ while(1)
 	while(head->next != NULL)
 	{
 		temp = remove_node(&head,&head);
-		free(temp);
+		FREE_NODE(temp);
 	}
 	exit(0);
 }
