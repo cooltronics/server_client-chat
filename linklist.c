@@ -1,17 +1,41 @@
+//Commands
+//gcc linklist.c -o linklist
+//valgrind --leak-check=yes --verbose ./linklist
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
-//assignment
-//1.create a linked list of employees (empid, empname, salary)
-//2.write a function to add node at start
+typedef enum retVal{
+	unSuccessful = -1,
+	Successful = 0
+};
 
 //self referential structre
 //contains at least one member which points to object of same data
 //type
 //linked list can grow and shrink dynamically
 #define EXIT 0
+//uncomment this to make debug ON.
+//#define DEBUG 1
+
+#ifdef DEBUG
+#define DBG(fmt, ...) \
+            do { if (DEBUG) fprintf(stdout, "%3d:: IN %s\(\) :: "fmt" \n",__LINE__,__FUNCTION__, \
+                ##__VA_ARGS__); } while (0)
+#else
+#define DBG(fmt, ...) 
+#endif
+
+#define PR(fmt, ...) \
+            do { fprintf(stdout, " %3d:: IN %s\(\) :: "fmt" \n",__LINE__,__FUNCTION__, \
+                ##__VA_ARGS__); } while (0)
+
+#define ERR(fmt, ...) \
+            do { fprintf(stderr, "ERROR Line %3d , IN %s\(\) :: "fmt" \n",__LINE__,__FUNCTION__, \
+                ##__VA_ARGS__); } while (0)
 
 #define	FREE_NODE(_NODE) do{	\
 							free(_NODE->name); \
@@ -22,7 +46,7 @@
 
 typedef struct linklist
 {
-	char* logid;
+	char *logid;
 	char *name;
 	char *password;
 	struct linklist *prev;
@@ -63,10 +87,14 @@ linklist *get_tail(linklist* head)
 void print_list(linklist *head)
 {
 	linklist *curr = head;
+	if(head == NULL)
+	{
+		ERR("List is empty.");
+	}
 	while(curr != NULL)
 	{
-	printf("\nName : %3s, ID : %3s, passwordd : %3s",curr->name,curr->logid,curr->password);
-	curr = curr->next;
+		PR("Name : %3s, ID : %3s, password : %3s",curr->name,curr->logid,curr->password);
+		curr = curr->next;
 	}
 }
 
@@ -76,7 +104,7 @@ void print_list_rev(linklist *head)
 	if(curr != NULL)
 	{
 	print_list_rev(curr->next);
-	printf("\nName : %3s, ID : %3s, passwordd : %3s",curr->name,curr->logid,curr->password);
+	PR("Name : %3s, ID : %3s, password : %3s",curr->name,curr->logid,curr->password);
 	}
 }
 
@@ -108,7 +136,6 @@ linklist *create_node()
 	new->prev = NULL;
 	new->next = NULL;
 	}
-	return new;
 }
 
 int add_node(linklist** head,linklist** node,int number)		//add node at perticuler no.
@@ -117,8 +144,8 @@ int add_node(linklist** head,linklist** node,int number)		//add node at perticul
 	if(*head == NULL)
 	{
 		if(number > 1){
-			printf("Not valid node number.\n");
-			return -1;
+			ERR("Not valid node number.");
+			return unSuccessful;
 		}
 	}
 	while(--number)
@@ -134,25 +161,43 @@ int add_node(linklist** head,linklist** node,int number)		//add node at perticul
 	{
 		temp->next = *node;
 		(*node)->prev = temp;
+		PR("added at tail.");
 		goto out;
 	}
 	if(number == 0)
 	{
-		if(*temp == NULL){
-			temp = *node;
+		if(temp == NULL){
+			*head = (*node);
+		
+			DBG("node->prev : %x\n",(*node)->prev);
+			DBG("node->next : %x\n",(*node)->next);
+			DBG("head : %x\n",(*head));
+			DBG("node : %x\n",(*node));
 		}
 		else{
-			*node->next = temp;
-			*node->prev = temp->prev;
-			if(temp->prev != NULL){
-				temp->prev->next = *node;
-			}
+			(*node)->next = temp;
+			(*node)->prev = temp->prev;
 			temp->prev = *node;
+			if((*node)->prev != NULL){
+				(*node)->prev->next = (*node);
+				PR("added in between.");
+			}
+			else{
+				*head = (*node);
+				PR("added at head.");
+			}
+
+			DBG("node->prev : %x\n",(*node)->prev);
+			DBG("node->next : %x\n",(*node)->next);
+			DBG("head : %x\n",(*head));
+			DBG("node : %x\n",(*node));
+			goto out;
 		}
 	}
 	else{
-		printf("Not valid node number.\n");
-		return -1;
+		ERR("Not valid node number.");
+		ERR("Enter valid number.");
+		return unSuccessful;
 	}
 	out:
 		return 0;
@@ -207,25 +252,26 @@ linklist* remove_node(linklist ** head,linklist **node)
 	linklist *temp;
 	if((*node)->prev == NULL && (*node)->next == NULL)
 	{
-		printf("1->\n");
+		DBG(">>1");
 		temp = (*node);
 		*head = NULL;
 	}
 	else if((*node)->prev == NULL)
 	{
-		printf("2->\n");
+		DBG(">>2");
 		temp = (*node);
 		*head = (*head)->next;
+		(*head)->prev = NULL;
 	}
 	else if( (*node)->next == NULL)
 	{
-		printf("3->\n");
+		DBG(">>3");
 		temp = *node;
 		(*node)->prev->next = NULL;
 	}
 	else
 	{
-		printf("4->\n");
+		DBG(">>4");
 		temp = *node;
 		(*node)->next->prev = (*node)->prev;
 		(*node)->prev->next = (*node)->next;
@@ -238,12 +284,14 @@ linklist *del_from_start(linklist **head)
 {
 	linklist *temp = NULL;
 	if(*head == NULL)
-	printf("List is empty.\n");
+	{
+		ERR("List is empty.\n");
+	}
 	else if((*head)->next == NULL)
 	{
-	temp = *head;
-	*head = NULL;
-	printf("Linklist is now empty.\n");
+		temp = *head;
+		*head = NULL;
+		PR("Linklist is now empty.\n");
 	}
 	else
 	{
@@ -261,21 +309,21 @@ linklist *del_from_end(linklist **head)
 	linklist *tail = *head;
 	
 	if(*head == NULL)
-	printf("List is empty.\n");
+	ERR("List is empty.\n");
 	else if((*head)->next == NULL)
 	{
-	temp = *head;
-	*head = NULL;
-	printf("Linklist is now empty.\n");
+		temp = *head;
+		*head = NULL;
+		PR("Linklist is now empty.\n");
 	}
 	else
 	{
-	while(tail->next->next != NULL)
-	{
-	tail = tail->next;
-	}
-	temp = tail->next;
-	tail->next = NULL;
+		while(tail->next->next != NULL)
+		{
+			tail = tail->next;
+		}
+		temp = tail->next;
+		tail->next = NULL;
 	}
 	return temp;
 }
@@ -322,12 +370,12 @@ linklist *search_node(linklist **head,char a[])
 
 linklist *delete_selected(linklist **head,char *name)
 {
-	printf("Node : %s is going to delete.\n",name);
+	PR("Node : %s is going to delete.\n",name);
 	linklist *temp = NULL;
 	temp = search_node(head,name);
 	if(temp != NULL)
 	{
-		printf("Node : %s is @ %p.\n",name,temp);
+		PR("Node : %s is @ %p.\n",name,temp);
 		temp = remove_node(head,&temp);
 	}
 	return temp;
@@ -356,7 +404,7 @@ while(1)
 	ch = choice_menu();
 	if(ch == EXIT)
 	{
-		exit(1);
+		break;
 	}
 	switch (ch)
 	{
@@ -383,7 +431,11 @@ while(1)
 			//}
 			//scan_list(newnode);
 			newnode = add_node_at_start(&head);
-			printf("Newnode : %p",newnode);
+			PR("Newnode : %p\n",newnode);
+
+			DBG("start node->prev : %x\n",(newnode)->prev);
+			DBG("start node->next : %x\n",(newnode)->next);
+			DBG("start head : %x\n",head);
 			break;
 		}
 
@@ -398,22 +450,26 @@ while(1)
 			//	exit(2);
 			//}
 			//scan_list(newnode);
-			add_node_at_end(&head);
-			printf("Newnode : %p",newnode);
+			newnode = add_node_at_end(&head);
+			PR("Newnode : %p\n",newnode);
+			
+			DBG("end node->prev : %x\n",(newnode)->prev);
+			DBG("end node->next : %x\n",(newnode)->next);
+			DBG("end head : %x\n",head);
 			break;
 		}
 
-		case 5: //delete from end
+		case 5: //delete from start
 		{
 			temp = del_from_start(&head);
 			if(temp == NULL)
 			{
-				printf("This name is not in entry.\n *** Try again *** \n");
+				ERR("This name is not in entry.\n *** Try again *** \n");
 			}
 			else
 			{
-				printf("Nama : %s,ID : %d,password : %s Removed Successful\n",temp->name,temp->logid,temp->password);
-				free(temp);
+				PR("Name : %3s,ID : %3s,password : %3s Removed Successful\n",temp->name,temp->logid,temp->password);
+				FREE_NODE(temp);
 			}
 			break;
 		}
@@ -423,29 +479,29 @@ while(1)
 			temp = del_from_end(&head);
 			if(temp == NULL)
 			{
-				printf("This name is not in entry.\n *** Try again *** \n");
+				ERR("This name is not in entry.\n *** Try again *** \n");
 			}
 			else
 			{
-				printf("Nama : %s,ID : %d,password : %s Removed Successful\n",temp->name,temp->logid,temp->password);
-				free(temp);
+				PR("Nama : %3s,ID : %3s,password : %3s Removed Successful\n",temp->name,temp->logid,temp->password);
+				FREE_NODE(temp);
 			}
 			break;
 		}
 
-		case 7: //search node
+		case 7: //selected delete
 		{
-			printf("Enter name : \n");
+			printf("Enter name want to delete : ");
 			scanf("%*c%s",name1);
 			temp = delete_selected(&head,name1);
 			if(temp == NULL)
 			{
-				printf("%s is not in entry.\n *** Try again *** \n",name1);
+				ERR("%s is not in entry.\n *** Try again *** \n",name1);
 			}
 			else
 			{
-				printf("Nama : %s,ID : %d,password : %s Removed Successful\n",temp->name,temp->logid,temp->password);
-				free(temp);
+				PR("Nama : %3s, ID : %3s, password : %3s Removed Successful\n",temp->name,temp->logid,temp->password);
+				FREE_NODE(temp);
 		}
 		break;
 		}
@@ -460,26 +516,35 @@ while(1)
 			temp = search_node(&head,name1);
 			if(temp == NULL)
 			{
-				printf("%s is not in entry.\n *** Try again *** \n",name1);
+				ERR("%s is not in entry.\n *** Try again *** \n",name1);
 			}
 			else
 			{
-				printf("Nama : %s,ID : %d,password : %s \n",temp->name,temp->logid,temp->password);
+				PR("Nama : %3s,ID : %3s,password : %3s \n",temp->name,temp->logid,temp->password);
 				if( check_password(temp,passwd) )
 				{
-					printf("Password matched.\n");
+					PR("Password matched.\n");
 				}
 				else
 				{
-					printf("Password not matched.\n");
+					PR("Password not matched.\n");
 				}
 			}
 			break;
 		}
 		case 9: //
 		{
-			printf("Add node at n th number.\n");
-			//add routine.
+			int no;
+			int ret = 0;
+			linklist *newnode = create_node();
+			printf("Enter no. to add node @ : ");
+			scanf("%d",&no);
+			scan_list(newnode);
+			ret = add_node(&head, &newnode,no);		//add node at perticuler no.
+			if(ret == unSuccessful)
+			{
+				FREE_NODE(newnode);
+			}
 		}
 	}
 }
@@ -487,8 +552,12 @@ while(1)
 	// scanf("%c%*c",&choice);
 	// }while(1); //while(choice == 'y' || choice == 'Y');
 	//exit main
-	while(head->next != NULL)
+
+	while(head != NULL)
 	{
+		DBG("head node->prev : %x",(head)->prev);
+		DBG("head node->next : %x",(head->next));
+		DBG(" head : %x\n",head);
 		temp = remove_node(&head,&head);
 		FREE_NODE(temp);
 	}
