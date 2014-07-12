@@ -138,6 +138,18 @@ linklist *create_node()
 	}
 }
 
+int linklist_length(linklist* head)
+{
+	int count = 0;
+	if(head != NULL)
+	{
+		head = head->next;
+		count++;
+	}
+	PR("count : %d",count);
+	return count;
+}
+
 int add_node(linklist** head,linklist** node,int number)		//add node at perticuler no.
 {
 	linklist *temp = *head;
@@ -539,6 +551,7 @@ while(1)
 			linklist *newnode = create_node();
 			printf("Enter no. to add node @ : ");
 			scanf("%d",&no);
+			linklist_length(head);
 			scan_list(newnode);
 			ret = add_node(&head, &newnode,no);		//add node at perticuler no.
 			if(ret == unSuccessful)

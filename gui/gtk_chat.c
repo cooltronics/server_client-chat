@@ -1,4 +1,6 @@
-
+/*
+gcc gtk_hello3.c -o gtk_hello3 `pkg-config --cflags --libs gtk+-2.0`
+*/
 
 
 //#include <gtk/gtk.h>
