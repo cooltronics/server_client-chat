@@ -7,35 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-
-typedef enum retVal{
-	unSuccessful = -1,
-	Successful = 0
-};
-
-//self referential structre
-//contains at least one member which points to object of same data
-//type
-//linked list can grow and shrink dynamically
-#define EXIT 0
-//uncomment this to make debug ON.
-//#define DEBUG 1
-
-#ifdef DEBUG
-#define DBG(fmt, ...) \
-            do { if (DEBUG) fprintf(stdout, "%3d:: IN %s\(\) :: "fmt" \n",__LINE__,__FUNCTION__, \
-                ##__VA_ARGS__); } while (0)
-#else
-#define DBG(fmt, ...) 
-#endif
-
-#define PR(fmt, ...) \
-            do { fprintf(stdout, " %3d:: IN %s\(\) :: "fmt" \n",__LINE__,__FUNCTION__, \
-                ##__VA_ARGS__); } while (0)
-
-#define ERR(fmt, ...) \
-            do { fprintf(stderr, "ERROR Line %3d , IN %s\(\) :: "fmt" \n",__LINE__,__FUNCTION__, \
-                ##__VA_ARGS__); } while (0)
+#include "linklist.h"
 
 #define	FREE_NODE(_NODE) do{	\
 							free(_NODE->name); \
@@ -66,6 +38,7 @@ int choice_menu()
 	printf("7 : Selected delete.\n");
 	printf("8 : Match password.\n");
 	printf("9 : Add node at n number.\n");
+	printf("10 : Check linklist length.\n");
 	printf("***************************");
 
 	printf("\nEnter your choice : ");
@@ -136,18 +109,33 @@ linklist *create_node()
 	new->prev = NULL;
 	new->next = NULL;
 	}
+	DBG("Newnode : %x created.",new);
+	return new;
 }
 
 int linklist_length(linklist* head)
 {
 	int count = 0;
-	if(head != NULL)
+	DBG("head is %x", head);
+	linklist * curr = head;
+	while(curr != NULL)
 	{
-		head = head->next;
+		curr = curr->next;
 		count++;
 	}
 	PR("count : %d",count);
 	return count;
+}
+
+bool Validate_node_number(linklist* head, int no)
+{
+	int ret = 0;
+	ret = linklist_length(head);
+	if( (ret+1) >= no)
+	{
+		return 1;
+	}
+	return 0;
 }
 
 int add_node(linklist** head,linklist** node,int number)		//add node at perticuler no.
@@ -166,7 +154,7 @@ int add_node(linklist** head,linklist** node,int number)		//add node at perticul
 			temp = temp->next;
 		}
 		else{
-			break;
+			break;				//break if number > node length
 		}
 	}
 	if(number == 1)
@@ -181,10 +169,10 @@ int add_node(linklist** head,linklist** node,int number)		//add node at perticul
 		if(temp == NULL){
 			*head = (*node);
 		
-			DBG("node->prev : %x\n",(*node)->prev);
-			DBG("node->next : %x\n",(*node)->next);
-			DBG("head : %x\n",(*head));
-			DBG("node : %x\n",(*node));
+			DBG("node->prev : %x",(*node)->prev);
+			DBG("node->next : %x",(*node)->next);
+			DBG("head : %x",(*head));
+			DBG("node : %x",(*node));
 		}
 		else{
 			(*node)->next = temp;
@@ -199,10 +187,10 @@ int add_node(linklist** head,linklist** node,int number)		//add node at perticul
 				PR("added at head.");
 			}
 
-			DBG("node->prev : %x\n",(*node)->prev);
-			DBG("node->next : %x\n",(*node)->next);
-			DBG("head : %x\n",(*head));
-			DBG("node : %x\n",(*node));
+			DBG("node->prev : %x",(*node)->prev);
+			DBG("node->next : %x",(*node)->next);
+			DBG("head : %x",(*head));
+			DBG("node : %x",(*node));
 			goto out;
 		}
 	}
@@ -443,11 +431,9 @@ while(1)
 			//}
 			//scan_list(newnode);
 			newnode = add_node_at_start(&head);
-			PR("Newnode : %p\n",newnode);
-
-			DBG("start node->prev : %x\n",(newnode)->prev);
-			DBG("start node->next : %x\n",(newnode)->next);
-			DBG("start head : %x\n",head);
+			DBG("start node->prev : %x",(newnode)->prev);
+			DBG("start node->next : %x",(newnode)->next);
+			DBG("start head : %x",head);
 			break;
 		}
 
@@ -462,12 +448,10 @@ while(1)
 			//	exit(2);
 			//}
 			//scan_list(newnode);
-			newnode = add_node_at_end(&head);
-			PR("Newnode : %p\n",newnode);
-			
-			DBG("end node->prev : %x\n",(newnode)->prev);
-			DBG("end node->next : %x\n",(newnode)->next);
-			DBG("end head : %x\n",head);
+			newnode = add_node_at_end(&head);			
+			DBG("end node->prev : %x",(newnode)->prev);
+			DBG("end node->next : %x",(newnode)->next);
+			DBG("end head : %x",head);
 			break;
 		}
 
@@ -480,7 +464,7 @@ while(1)
 			}
 			else
 			{
-				PR("Name : %3s,ID : %3s,password : %3s Removed Successful\n",temp->name,temp->logid,temp->password);
+				PR("Name : %3s,ID : %3s,password : %3s Removed Successful",temp->name,temp->logid,temp->password);
 				FREE_NODE(temp);
 			}
 			break;
@@ -495,7 +479,7 @@ while(1)
 			}
 			else
 			{
-				PR("Nama : %3s,ID : %3s,password : %3s Removed Successful\n",temp->name,temp->logid,temp->password);
+				PR("Name : %3s,ID : %3s,password : %3s Removed Successful\n",temp->name,temp->logid,temp->password);
 				FREE_NODE(temp);
 			}
 			break;
@@ -521,9 +505,9 @@ while(1)
 		{
 			char passwd[128];
 
-			printf("Enter name : \n");
+			printf("Enter name : ");
 			scanf("%*c%s",name1);
-			printf("Enter password : \n");
+			printf("Enter password : ");
 			scanf("%s",passwd);
 			temp = search_node(&head,name1);
 			if(temp == NULL)
@@ -532,33 +516,48 @@ while(1)
 			}
 			else
 			{
-				PR("Nama : %3s,ID : %3s,password : %3s \n",temp->name,temp->logid,temp->password);
+				PR("Nama : %3s,ID : %3s,password : %3s",temp->name,temp->logid,temp->password);
 				if( check_password(temp,passwd) )
 				{
-					PR("Password matched.\n");
+					PR("Password matched.");
 				}
 				else
 				{
-					PR("Password not matched.\n");
+					PR("Password not matched.");
 				}
 			}
 			break;
 		}
-		case 9: //
+		case 9: //add node at given number
 		{
 			int no;
 			int ret = 0;
 			linklist *newnode = create_node();
 			printf("Enter no. to add node @ : ");
 			scanf("%d",&no);
-			linklist_length(head);
-			scan_list(newnode);
-			ret = add_node(&head, &newnode,no);		//add node at perticuler no.
-			if(ret == unSuccessful)
+			if(Validate_node_number(head,no))			//check valid node number
 			{
-				FREE_NODE(newnode);
+				scan_list(newnode);
+				ret = add_node(&head, &newnode,no);		//add node at perticuler no.
+				if(ret == unSuccessful)
+				{
+					FREE_NODE(newnode);
+				}
 			}
+			break;
 		}
+		case 10:
+		{
+			int length = 0;
+			length = linklist_length(head);
+			PR("Linklist length is : %d",length);
+			break;
+		}
+		default:
+		{
+			PR("No any case selected.");
+		}
+
 	}
 }
 	// printf("Want to continue...\n then press 'y' : ");
@@ -570,8 +569,9 @@ while(1)
 	{
 		DBG("head node->prev : %x",(head)->prev);
 		DBG("head node->next : %x",(head->next));
-		DBG(" head : %x\n",head);
+		DBG(" head : %x",head);
 		temp = remove_node(&head,&head);
+		DBG(" Node removed : %x\n",temp);
 		FREE_NODE(temp);
 	}
 	exit(0);
