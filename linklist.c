@@ -8,10 +8,10 @@
 #include <string.h>
 #include <stdbool.h>
 
-typedef enum retVal{
+typedef enum {
 	unSuccessful = -1,
 	Successful = 0
-};
+}retVal;
 
 //self referential structre
 //contains at least one member which points to object of same data
@@ -22,27 +22,24 @@ typedef enum retVal{
 //#define DEBUG 1
 
 #ifdef DEBUG
-#define DBG(fmt, ...) \
-            do { if (DEBUG) fprintf(stdout, "%3d:: IN %s\(\) :: "fmt" \n",__LINE__,__FUNCTION__, \
-                ##__VA_ARGS__); } while (0)
+#define DBG(fmt, ...)	do { if (DEBUG) fprintf(stdout, "%3d:: IN %s\() :: "fmt" \n",__LINE__,__FUNCTION__, \
+	                ##__VA_ARGS__); } while (0)
 #else
 #define DBG(fmt, ...) 
 #endif
 
-#define PR(fmt, ...) \
-            do { fprintf(stdout, " %3d:: IN %s\(\) :: "fmt" \n",__LINE__,__FUNCTION__, \
-                ##__VA_ARGS__); } while (0)
+#define PR(fmt, ...)	do { fprintf(stdout, " %3d:: IN %s\() :: "fmt" \n",__LINE__,__FUNCTION__, \
+        	        ##__VA_ARGS__); } while (0)
 
-#define ERR(fmt, ...) \
-            do { fprintf(stderr, "ERROR Line %3d , IN %s\(\) :: "fmt" \n",__LINE__,__FUNCTION__, \
-                ##__VA_ARGS__); } while (0)
+#define ERR(fmt, ...)	do { fprintf(stderr, "ERROR Line %3d , IN %s\() :: "fmt" \n",__LINE__,__FUNCTION__, \
+                	##__VA_ARGS__); } while (0)
 
 #define	FREE_NODE(_NODE) do{	\
-							free(_NODE->name); \
-							free(_NODE->logid);	\
-							free(_NODE->password);	\
-							free(_NODE);	\
-							}while(0)
+				free(_NODE->name); \
+				free(_NODE->logid);	\
+				free(_NODE->password);	\
+				free(_NODE);	\
+			}while(0)
 
 typedef struct linklist
 {
@@ -89,7 +86,7 @@ void print_list(linklist *head)
 	linklist *curr = head;
 	if(head == NULL)
 	{
-		ERR("List is empty.");
+		DBG("List is empty.");
 	}
 	while(curr != NULL)
 	{
@@ -133,9 +130,10 @@ linklist *create_node()
 	new = (linklist *) malloc (sizeof(linklist));
 	if(new != NULL)
 	{
-	new->prev = NULL;
-	new->next = NULL;
+		new->prev = NULL;
+		new->next = NULL;
 	}
+	return new;
 }
 
 int linklist_length(linklist* head)
