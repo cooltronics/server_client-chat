@@ -60,7 +60,7 @@ linklist *get_tail(linklist* head)
 	tail = head;
 	while(tail->next != NULL)
 	{
-		tail = tail->next;
+	tail = tail->next;
 	}
 	return tail;
 }
@@ -85,9 +85,8 @@ void print_list_rev(linklist *head)
 	linklist *curr = head;
 	if(curr != NULL)
 	{
-		print_list_rev(curr->next);
-		PR("Name : %3s, ID : %3s, password : %3s",curr->name,curr->logid,curr->password);
-		DBG("add : 0x%x",curr);
+	print_list_rev(curr->next);
+	PR("Name : %3s, ID : %3s, password : %3s",curr->name,curr->logid,curr->password);
 	}
 }
 
@@ -201,7 +200,7 @@ int add_node(linklist** head,linklist** node,int number)		//add node at perticul
 	{
 		if(temp == NULL){
 			*head = (*node);
-
+		
 			DBG("node->prev : %x",(*node)->prev);
 			DBG("node->next : %x",(*node)->next);
 			DBG("head : %x",(*head));
@@ -352,7 +351,7 @@ linklist *del_from_end(linklist **head)
 #if 0
 	linklist *temp = NULL;
 	linklist *tail = *head;
-
+	
 	if(*head == NULL)
 		ERR("List is empty.\n");
 	else if((*head)->next == NULL)
@@ -480,7 +479,7 @@ void linklist_retrive(linklist **head, char *filename)
 //linklist* linklist_reverse(linklist **node)
 void* linklist_reverse(linklist **node)
 {
-/*	linklist* curr;
+	/*linklist* curr;
 	if(node == NULL || node->next == NULL)
 	{
 		return node;
@@ -488,11 +487,22 @@ void* linklist_reverse(linklist **node)
 	curr = linklist_reverse(node->next);
 	node->next->next = node;
 	node->next = NULL;
-	return curr;
-*/
+	return curr;*/
 
-	//////////////// Method 1 /////////////////////
-/*
+	/*linklist* curr1 = node;
+	linklist* curr2 = (node)->next;
+	static linklist* temp;
+	if(curr2->next != NULL)
+	{
+		linklist_reverse(curr1->next);
+	}
+	else
+	{
+		temp = curr2;
+	}
+	curr2->next = curr1;
+	return temp;*/
+	
 	linklist* curr1 = *node;
 	linklist* curr2 = curr1->next;
 
@@ -508,35 +518,6 @@ void* linklist_reverse(linklist **node)
 	curr1->next->next = curr1;
 	curr1->next = NULL;
 	*node = curr2;
-*/
-	//////////////// Method 1 same /////////////////////
-	linklist *n = *node;
-	linklist *m = n->next;
-
-	if(n->next != NULL)
-	{
-		linklist_reverse(&m);
-		n->next->next = n;
-		n->next = NULL;
-		DBG("n : 0x%x->0x%x m : 0x%x->0x%x",n, n->next, m, m->next);
-		*node = m;
-	}
-	return;
-	
-	//////////////// Method 2 /////////////////////
-/*	linklist* prev = NULL;
-	linklist* curr = (*node);
-	linklist* next;
-	while(curr != NULL)
-	{
-		next = curr->next;
-		curr->next = prev;
-		prev = curr;
-		curr = next;
-	}
-	*node = prev;
-	return;
-*/
 }
 
 int main (int argc,char *argv[])
@@ -554,6 +535,7 @@ int main (int argc,char *argv[])
 		ch = choice_menu();
 		if(ch == EXIT)
 		{
+			print_list(head);
 			break;
 		}
 		switch (ch)
@@ -755,5 +737,6 @@ while(head != NULL)
 	DBG(" Node removed : %x\n",temp);
 	FREE_NODE(temp);
 }
+
 exit(0);
 }
